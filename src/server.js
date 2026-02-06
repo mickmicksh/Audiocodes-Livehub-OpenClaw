@@ -216,36 +216,60 @@ async function getGreeting(conversation, startActivity) {
 
 async function getOpenClawResponse(conversation, userText) {
   try {
-    // Option 1: Use OpenClaw's HTTP API if available
-    // Option 2: Use a dedicated session for voice calls
-    // For now, we'll implement a simple HTTP call to OpenClaw gateway
+    // Use OpenClaw's OpenResponses-compatible HTTP API
+    // Docs: /app/docs/gateway/openresponses-http-api.md
     
-    const response = await fetch(`${config.openclawUrl}/api/chat`, {
+    // Use conversation ID as user for session persistence
+    const sessionUser = `voice-${conversation.id}`;
+    
+    const response = await fetch(`${config.openclawUrl}/v1/responses`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(config.openclawToken && { 'Authorization': `Bearer ${config.openclawToken}` }),
+        'x-openclaw-agent-id': config.agentId,
       },
       body: JSON.stringify({
-        message: userText,
-        sessionId: `voice-${conversation.id}`,
-        agentId: config.agentId,
+        model: 'openclaw',
+        input: userText,
+        user: sessionUser,
+        // Add voice context to system instructions
+        instructions: 'You are responding to a voice call. Keep responses concise and conversational - this will be spoken aloud via text-to-speech. Avoid markdown, bullet points, and long lists. Speak naturally as if on a phone call.',
       }),
     });
     
     if (!response.ok) {
-      app.log.error({ status: response.status }, 'OpenClaw request failed');
+      const errorText = await response.text().catch(() => 'Unknown error');
+      app.log.error({ status: response.status, error: errorText }, 'OpenClaw request failed');
       return "Sorry, I'm having trouble thinking right now. Can you try again?";
     }
     
     const data = await response.json();
-    return data.response || data.message || data.text || "I'm not sure what to say.";
+    
+    // Extract text from OpenResponses format
+    // Response has output array with items containing content
+    if (data.output && Array.isArray(data.output)) {
+      for (const item of data.output) {
+        if (item.type === 'message' && item.content) {
+          for (const part of item.content) {
+            if (part.type === 'output_text' && part.text) {
+              return part.text;
+            }
+          }
+        }
+      }
+    }
+    
+    // Fallback to direct text property if present
+    if (data.text) return data.text;
+    if (data.response) return data.response;
+    
+    app.log.warn({ data }, 'Unexpected OpenClaw response format');
+    return "I'm not sure what to say.";
     
   } catch (error) {
-    app.log.error({ error: error.message }, 'Error calling OpenClaw');
-    
-    // Fallback: simple echo for testing
-    return `I heard you say: "${userText}". OpenClaw integration is not configured yet.`;
+    app.log.error({ error: error.message, stack: error.stack }, 'Error calling OpenClaw');
+    return "Sorry, I'm having trouble connecting right now. Please try again.";
   }
 }
 
