@@ -1,62 +1,66 @@
 # OpenClaw ↔ AudioCodes Live Hub Bridge
 
-Voice interface for OpenClaw agents via AudioCodes Live Hub.
+**Give your AI agent a phone number.** 📞🤖
+
+This bridge connects [OpenClaw](https://openclaw.ai) agents to [AudioCodes Live Hub](https://livehub.audiocodes.io), enabling voice calls with your AI.
 
 ```
-Phone Call → Live Hub → STT → This Bridge → OpenClaw → Response → TTS → Caller hears Rex 🦖
+Phone Call → Live Hub (STT) → This Bridge → OpenClaw → Response → Live Hub (TTS) → Caller
 ```
 
-## What is this?
+## Features
 
-This is a webhook server that implements the [AudioCodes Bot API](https://techdocs.audiocodes.com/voice-ai-connect/Content/Bot-API/ac-bot-api-mode-http.htm), allowing Live Hub to connect voice calls to an OpenClaw agent.
+- 🎙️ **Voice conversations** with your OpenClaw agent
+- 🔐 **Caller verification** — trusted numbers get full access, others are limited
+- 📞 **Inbound calls** — people call your AI
+- 📤 **Outbound calls** — your AI calls people (coming soon)
+- 🌍 **Multi-language** — use any STT/TTS language Live Hub supports
 
 ## Quick Start
 
-### 1. Install dependencies
+1. **Deploy the bridge** alongside OpenClaw
+2. **Configure Live Hub** with your webhook URL
+3. **Get a phone number** from Live Hub
+4. **Call your AI!**
 
-```bash
-npm install
-```
+📖 **[Full Setup Guide →](docs/SETUP_GUIDE.md)**
 
-### 2. Configure environment
+## Requirements
 
-```bash
-export BOT_TOKEN="your-secret-token"        # Token Live Hub uses to authenticate
-export OPENCLAW_URL="http://localhost:3000" # Your OpenClaw gateway
-export OPENCLAW_TOKEN=""                     # Optional: OpenClaw auth token
-export PORT=3100                             # Port to listen on
-```
-
-### 3. Run the server
-
-```bash
-npm start
-```
-
-### 4. Configure Live Hub
-
-In AudioCodes Live Hub self-service:
-
-1. Go to **Bot Connections** → **Add Bot**
-2. Select **AudioCodes Bot API** as the framework
-3. Enter your webhook URL: `https://your-domain.fly.dev/webhook`
-4. Enter the same token you set in `BOT_TOKEN`
-5. Save and assign a phone number
-
-### 5. Call your bot!
-
-Dial the assigned number and talk to your OpenClaw agent.
+- OpenClaw instance with `/v1/responses` API enabled
+- AudioCodes Live Hub account (free tier available)
+- Public HTTPS endpoint for the webhook
 
 ## Environment Variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `PORT` | No | 3100 | Port to listen on |
-| `HOST` | No | 0.0.0.0 | Host to bind to |
-| `BOT_TOKEN` | Yes | - | Token for authenticating Live Hub requests |
-| `OPENCLAW_URL` | Yes | - | URL of your OpenClaw gateway |
-| `OPENCLAW_TOKEN` | No | - | Auth token for OpenClaw API |
-| `AGENT_ID` | No | main | OpenClaw agent ID to use |
+```bash
+BOT_TOKEN=secret-token-for-livehub      # Live Hub authenticates with this
+OPENCLAW_URL=http://localhost:3000       # Your OpenClaw gateway
+OPENCLAW_TOKEN=your-gateway-token        # OpenClaw auth
+TRUSTED_CALLERS=+31612345678             # Comma-separated trusted numbers
+```
+
+## Architecture
+
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐     ┌──────────┐
+│   Caller    │────▶│  Live Hub    │────▶│   Bridge    │────▶│ OpenClaw │
+│   (Phone)   │◀────│  (STT/TTS)   │◀────│  (Webhook)  │◀────│  (Agent) │
+└─────────────┘     └──────────────┘     └─────────────┘     └──────────┘
+```
+
+**Live Hub** handles voice (STT/TTS), phone numbers, SIP.
+**Bridge** implements AudioCodes Bot API, connects to OpenClaw.
+**OpenClaw** is your AI agent with memory, tools, personality.
+
+## Security
+
+Unknown callers are automatically restricted:
+- No access to private information
+- No actions on your behalf
+- General chat only
+
+Add trusted numbers via `TRUSTED_CALLERS` env var.
 
 ## API Endpoints
 
@@ -64,31 +68,17 @@ Dial the assigned number and talk to your OpenClaw agent.
 |----------|--------|-------------|
 | `/webhook` | GET | Health check |
 | `/webhook` | POST | Create conversation |
-| `/conversation/:id/activities` | POST | Send/receive messages |
-| `/conversation/:id/refresh` | POST | Keep conversation alive |
-| `/conversation/:id/disconnect` | POST | End conversation |
-
-## Deployment
-
-### Fly.io
-
-```bash
-fly launch
-fly secrets set BOT_TOKEN=your-secret-token
-fly secrets set OPENCLAW_URL=https://your-openclaw-gateway
-fly deploy
-```
-
-## Architecture
-
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐     ┌──────────┐
-│   Caller    │────▶│  Live Hub    │────▶│ This Bridge │────▶│ OpenClaw │
-│   (Phone)   │◀────│  (STT/TTS)   │◀────│  (Webhook)  │◀────│  (Agent) │
-└─────────────┘     └──────────────┘     └─────────────┘     └──────────┘
-     Voice              Text                  Text               Text
-```
+| `/conversation/:id/activities` | POST | Exchange messages |
+| `/conversation/:id/refresh` | POST | Keep alive |
+| `/conversation/:id/disconnect` | POST | End call |
 
 ## License
 
 MIT
+
+## Credits
+
+Built for the OpenClaw + AudioCodes Live Hub integration PoC.
+
+- [OpenClaw](https://openclaw.ai) — AI agent framework
+- [AudioCodes Live Hub](https://livehub.audiocodes.io) — Voice AI platform
