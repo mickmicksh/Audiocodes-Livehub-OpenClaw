@@ -1,0 +1,17 @@
+{
+  "name": "openclaw-audiocodes-livehub",
+  "version": "0.1.0",
+  "description": "AudioCodes Live Hub webhook bridge for OpenClaw",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "keywords": ["openclaw", "audiocodes", "livehub", "voiceai", "voice", "telephony"],
+  "author": "Mickey",
+  "license": "MIT",
+  "dependencies": {
+    "fastify": "^5.0.0"
+  }
+}
