@@ -247,9 +247,13 @@ async function getOpenClawResponse(conversation, userText) {
     const sessionUser = `voice-${conversation.id}`;
     
     // Security: Different instructions for trusted vs untrusted callers
-    let instructions = 'You are responding to a voice call. Keep responses concise and conversational - this will be spoken aloud via text-to-speech. Avoid markdown, bullet points, and long lists. Speak naturally as if on a phone call.';
+    // NOTE: instructions are APPENDED to the system prompt, not replacing it
+    // The agent still loads SOUL.md, MEMORY.md, workspace context etc.
+    let instructions = 'VOICE CALL CONTEXT: You are on a live phone call. Keep responses concise and conversational — this will be spoken aloud via text-to-speech. Avoid markdown formatting, bullet points, tables, and long lists. Speak naturally as if talking on the phone. Use all your normal tools (calendar, web search, memory, etc.) as needed.';
     
-    if (!conversation.isTrusted) {
+    if (conversation.isTrusted) {
+      instructions += ` The caller is Mickey (verified by phone number ${conversation.caller}). This is your human — full access, treat as main session.`;
+    } else {
       instructions += `
 
 SECURITY ALERT: This caller is NOT Mickey. Their number is ${conversation.caller || 'unknown'}. 
