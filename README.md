@@ -20,10 +20,21 @@ Phone Call → Live Hub (STT) → This Bridge → OpenClaw → Response → Live
 
 1. **Deploy the bridge** alongside OpenClaw
 2. **Configure Live Hub** with your webhook URL
-3. **Get a phone number** from Live Hub
+3. **Get a phone number** and route it to the bot
 4. **Call your AI!**
 
 📖 **[Full Setup Guide →](docs/SETUP_GUIDE.md)**
+
+### Phone Number Setup
+
+You need a phone number routed through Live Hub to your bot:
+
+1. **Get a number** — In Live Hub, go to **Voice Channels → Phone Numbers** and buy one (or bring your own SIP trunk via **SIP Connections**)
+2. **Create bot connection** — Go to **Bot Connections → Add new voice bot connection**, select **AudioCodes Bot API**, set your bridge URL (`https://your-host:3100/webhook`) and `BOT_TOKEN`
+3. **Configure speech** — Set up STT (e.g. Google Chirp 2, Deepgram Nova-3) and TTS (e.g. ElevenLabs, Deepgram Aura-2) providers
+4. **Route the number** — Go to **Routing Rules → Add Rule**, set your phone number as source and your bot connection as destination
+
+That's it — calls to that number now hit your AI agent.
 
 ## Requirements
 
